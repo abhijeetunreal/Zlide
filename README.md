@@ -1,4 +1,4 @@
-# Vibe Open Source · Zlide: Present Beyond Slides
+Zlide: Present Beyond Slides
 
 Zlide is an infinite-canvas presentation tool that lets you zoom through ideas instead of flipping slides. Create fluid storytelling journeys where every frame connects visually and conceptually. Zoom in, zoom out, explore—tell stories the way minds truly work.
 
