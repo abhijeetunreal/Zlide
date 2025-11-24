@@ -1,0 +1,2506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mini Prezi Clone – Frames with Lock & Proper Selection</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+
+    header {
+      padding: 8px 12px;
+      background: #020617;
+      border-bottom: 1px solid #1f2937;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      flex-wrap: wrap;
+    }
+
+    #text-toolbar {
+      padding: 4px 8px;
+      background: transparent;
+      border: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      flex: 1;
+      justify-content: flex-start;
+    }
+
+    #text-toolbar.disabled {
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    #text-toolbar.hidden {
+      display: none;
+    }
+
+    #text-toolbar label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    #text-toolbar .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .toolbar-separator {
+      width: 1px;
+      height: 24px;
+      background: #1f2937;
+      margin: 0 6px;
+    }
+
+    #font-size-input {
+      width: 70px;
+      padding: 4px 6px;
+      border-radius: 4px;
+      border: 1px solid #374151;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+
+    .header-left,
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header-right {
+      position: relative;
+    }
+
+    .export-menu-wrapper {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    #export-menu-btn::after {
+      content: "▾";
+      margin-left: 6px;
+      font-size: 12px;
+    }
+
+    #export-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      background: #020617;
+      border: 1px solid #1f2937;
+      border-radius: 6px;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
+      padding: 4px;
+      display: none;
+      flex-direction: column;
+      min-width: 180px;
+      z-index: 400;
+    }
+
+    #export-menu.visible {
+      display: flex;
+    }
+
+    #export-menu button {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: transparent;
+      border: none;
+      color: #e5e7eb;
+      padding: 10px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    #export-menu button span {
+      font-size: 11px;
+      color: #9ca3af;
+    }
+
+    #export-menu button:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    button {
+      background: #1d4ed8;
+      border: none;
+      color: white;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    button:hover {
+      background: #2563eb;
+    }
+
+    button.secondary {
+      background: #111827;
+      border: 1px solid #374151;
+      color: #e5e7eb;
+    }
+
+    button.secondary:hover {
+      background: #1f2937;
+    }
+
+    #root {
+      flex: 1;
+      display: flex;
+      height: calc(100vh - 40px);
+    }
+
+    /* Sidebar for frames */
+    #frames-panel {
+      width: 230px;
+      border-right: 1px solid #1f2937;
+      background: #020617;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+    }
+
+    #frames-panel h2 {
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .frames-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .icon-button {
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      padding: 0;
+      border-radius: 6px;
+    }
+
+    #frames-list {
+      flex: 0 1 auto;
+      max-height: 40%;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    /* Layers panel */
+    #layers-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 0;
+    }
+
+    #layers-panel h2 {
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    #layers-list {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .layer-item {
+      padding: 6px 8px;
+      border-radius: 6px;
+      background: #020617;
+      border: 1px solid #1f2937;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      user-select: none;
+      position: relative;
+    }
+
+    .layer-item:hover {
+      background: #111827;
+      border-color: #374151;
+    }
+
+    .layer-item.selected {
+      border-color: #3b82f6;
+      background: #1e3a8a;
+    }
+
+    .layer-item.dragging {
+      opacity: 0.5;
+    }
+
+    .layer-item.drag-over {
+      border-top: 2px solid #3b82f6;
+    }
+
+    .layer-icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+
+    .layer-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .layer-name-edit {
+      flex: 1;
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 4px;
+      padding: 2px 4px;
+      font-size: 12px;
+      color: #f3f4f6;
+    }
+
+    .layer-actions {
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .layer-item:hover .layer-actions {
+      opacity: 1;
+    }
+
+    .layer-action-btn {
+      width: 18px;
+      height: 18px;
+      padding: 0;
+      background: transparent;
+      border: none;
+      color: #9ca3af;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      border-radius: 3px;
+    }
+
+    .layer-action-btn:hover {
+      background: #374151;
+      color: #e5e7eb;
+    }
+
+
+    .frame-item {
+      padding: 6px 8px;
+      border-radius: 6px;
+      background: #020617;
+      border: 1px solid #1f2937;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      user-select: none;
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+
+    .frame-item:hover {
+      background: #111827;
+      border-color: #374151;
+    }
+
+    .frame-item.active {
+      border-color: #22c55e;
+      background: #052e16;
+    }
+
+    .frame-item.locked {
+      opacity: 0.45;
+      filter: grayscale(0.4);
+    }
+
+    .frame-icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+
+    .frame-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .frame-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: #f9fafb;
+    }
+
+    .frame-meta {
+      font-size: 11px;
+      color: #9ca3af;
+    }
+
+    .frame-actions {
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .frame-item:hover .frame-actions {
+      opacity: 1;
+    }
+
+    /* Canvas / viewport */
+    #viewport-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 8px;
+      gap: 8px;
+    }
+
+    #hint-bar {
+      font-size: 11px;
+      color: #9ca3af;
+    }
+
+    #viewport {
+      flex: 1;
+      border-radius: 10px;
+      border: 1px solid #1f2937;
+      background: radial-gradient(circle at top, #111827, #020617 60%);
+      overflow: hidden;
+      position: relative;
+      cursor: grab;
+    }
+
+    #viewport.grabbing {
+      cursor: grabbing;
+    }
+
+    /* Big virtual canvas (world space) */
+    #canvas {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 5000px;
+      height: 5000px;
+      transform-origin: 0 0;
+      pointer-events: auto;
+    }
+
+    /* Overlay for frames (screen space, NOT scaled) */
+    #frame-overlay {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none; /* children enabled selectively */
+    }
+
+    /* Overlay for element resize handles (screen space, NOT scaled) */
+    #element-handles-overlay {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none; /* children enabled selectively */
+    }
+
+
+    /* Elements (text, images) */
+    .element {
+      position: absolute;
+      min-width: 40px;
+      min-height: 20px;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: var(--element-border-width, 0.5px) solid #4b5563;
+      background: rgba(15, 23, 42, 0.92);
+      color: #e5e7eb;
+      font-size: 18px;
+      cursor: move;
+      outline: none;
+      user-select: text;
+    }
+
+    .element.layer-selected {
+      border-color: #f97316;
+      box-shadow: 0 0 0 var(--element-selection-shadow, 1px) rgba(249, 115, 22, 0.8);
+    }
+
+    .element:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 var(--element-focus-shadow, 0.5px) #3b82f6;
+    }
+
+    .element.image-element {
+      padding: 0;
+      background: rgba(15, 23, 42, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .element.image-element img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .text-resize-handle {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      right: -6px;
+      bottom: -6px;
+      border-radius: 50%;
+      background: #f97316;
+      border: 2px solid #7c2d12;
+      cursor: ns-resize;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .element.text-element:hover .text-resize-handle {
+      opacity: 1;
+    }
+
+    .element-resize-handle {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      background: #3b82f6;
+      border: 2px solid #1e3a8a;
+      cursor: se-resize;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: auto;
+      transform: translate(-50%, -50%);
+    }
+
+    .element-resize-handle.visible {
+      opacity: 1;
+    }
+
+    /* Visible frames in overlay (constant thickness) */
+    .frame-rect {
+      position: absolute;
+      border: 2px solid #22c55e;
+      background: rgba(34, 197, 94, 0.065);
+      box-shadow: 0 0 0 1px rgba(21, 128, 61, 0.3);
+      pointer-events: none; /* default: NO interaction */
+    }
+
+    .frame-rect.active {
+      border-color: #a3e635;
+      box-shadow: 0 0 0 2px rgba(190, 242, 100, 0.6);
+    }
+
+    /* Only currently active & unlocked frame is interactive */
+    .frame-rect.interactive {
+      pointer-events: auto;
+    }
+
+    .frame-resize-handle {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      right: -6px;
+      bottom: -6px;
+      border-radius: 999px;
+      background: #22c55e;
+      border: 2px solid #052e16;
+      cursor: se-resize;
+    }
+
+    #player-status {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-left: 8px;
+    }
+
+    #image-input,
+    #import-json-input {
+      display: none;
+    }
+
+    /* Presentation mode styles */
+    body.presentation-mode header,
+    body.presentation-mode #frames-panel,
+    body.presentation-mode #hint-bar {
+      display: none;
+    }
+
+    body.presentation-mode #layers-panel {
+      display: none;
+    }
+
+    body.presentation-mode #text-toolbar {
+      display: none;
+    }
+
+    body.presentation-mode #root {
+      height: 100vh;
+    }
+
+    body.presentation-mode #viewport-wrapper {
+      padding: 0;
+    }
+
+    body.presentation-mode #viewport {
+      border-radius: 0;
+      border: none;
+    }
+
+    body.presentation-mode #frame-overlay,
+    body.presentation-mode #element-handles-overlay {
+      display: none;
+    }
+
+    body.presentation-mode .element {
+      border: none;
+      box-shadow: none;
+      cursor: default;
+    }
+
+    body.presentation-mode .element:focus {
+      border: none;
+      box-shadow: none;
+    }
+
+    #presentation-nav {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      display: flex;
+      gap: 8px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      z-index: 1000;
+    }
+
+    #presentation-nav.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #presentation-nav button {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(0, 0, 0, 0.65);
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+    }
+
+    #presentation-nav button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    body:not(.presentation-mode) #presentation-nav {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <button id="add-text-btn">Add Text Box</button>
+      <button id="add-image-btn">Add Image</button>
+    </div>
+    <div id="text-toolbar" class="disabled hidden">
+      <div class="toolbar-group">
+        <label for="font-size-input">Font Size
+          <input id="font-size-input" type="number" min="8" max="200" placeholder="px" />
+        </label>
+      </div>
+      <div class="toolbar-separator"></div>
+      <div class="toolbar-group">
+        <button id="text-uppercase-btn" class="secondary" title="Uppercase">AA</button>
+        <button id="text-lowercase-btn" class="secondary" title="Lowercase">aa</button>
+        <button id="text-capitalize-btn" class="secondary" title="Capitalize">Aa</button>
+      </div>
+      <div class="toolbar-separator"></div>
+      <div class="toolbar-group">
+        <button id="text-align-left-btn" class="secondary" title="Align left">⯇</button>
+        <button id="text-align-center-btn" class="secondary" title="Align center">≡</button>
+        <button id="text-align-right-btn" class="secondary" title="Align right">⯈</button>
+      </div>
+      <div class="toolbar-separator"></div>
+      <div class="toolbar-group">
+        <button id="text-bold-btn" class="secondary" title="Bold">B</button>
+        <button id="text-italic-btn" class="secondary" title="Italic">I</button>
+      </div>
+    </div>
+    <div class="header-right">
+      <span id="player-status"></span>
+      <button id="import-json-btn" class="secondary" type="button">Import JSON</button>
+      <div class="export-menu-wrapper">
+        <button id="export-menu-btn" class="secondary" type="button">Export</button>
+        <div id="export-menu" role="menu" aria-label="Export options">
+          <button id="export-json-btn" type="button">
+            Export JSON
+            <span>.json</span>
+          </button>
+          <button id="export-html-btn" type="button">
+            Export HTML
+            <span>.html</span>
+          </button>
+        </div>
+      </div>
+      <button id="play-btn">Play</button>
+    </div>
+    <input id="image-input" type="file" accept="image/*" multiple />
+    <input id="import-json-input" type="file" accept="application/json,.json" />
+  </header>
+
+  <div id="root">
+    <aside id="frames-panel">
+      <div class="frames-header">
+        <h2>Frames (Path)</h2>
+        <button id="add-frame-btn" class="secondary icon-button" title="Add Frame" aria-label="Add Frame">+</button>
+      </div>
+      <div id="frames-list"></div>
+      
+      <div id="layers-panel">
+        <h2>Layers</h2>
+        <div id="layers-list"></div>
+      </div>
+    </aside>
+
+    <main id="viewport-wrapper">
+      
+      <div id="viewport">
+        <div id="canvas"></div>
+        <div id="frame-overlay"></div>
+        <div id="element-handles-overlay"></div>
+      </div>
+    </main>
+  </div>
+
+  <div id="presentation-nav" aria-label="Presentation navigation">
+    <button id="presentation-nav-prev" type="button" title="Previous frame">‹</button>
+    <button id="presentation-nav-next" type="button" title="Next frame">›</button>
+  </div>
+
+  <script>
+    // ===== STATE =====
+    const elements = []; // {id, type, x, y, text?, src?, width?, height?, fontSize?, locked?}
+    const frames = [];   // {id, name, x, y, width, height, locked}
+    let activeFrameIndex = -1;
+    let selectedElementId = null;
+    let selectedElementIds = []; // For multi-select
+    const undoStack = [];
+    const redoStack = [];
+    const HISTORY_LIMIT = 50;
+    let isRestoringState = false;
+    let textEditHistoryArmed = false;
+    let textEditHistoryTimer = null;
+    const importedState = window.__PRESENTATION_EXPORT__ || null;
+    const isExportedPresentation = Boolean(window.__EXPORT_PRESENTATION_ONLY__);
+
+    const camera = {
+      x: 0,
+      y: 0,
+      scale: 1
+    };
+
+    const viewport = document.getElementById("viewport");
+    const canvas = document.getElementById("canvas");
+    const frameOverlay = document.getElementById("frame-overlay");
+    const elementHandlesOverlay = document.getElementById("element-handles-overlay");
+    const framesList = document.getElementById("frames-list");
+    const layersList = document.getElementById("layers-list");
+    const playerStatus = document.getElementById("player-status");
+    const imageInput = document.getElementById("image-input");
+    const importJsonBtn = document.getElementById("import-json-btn");
+    const importJsonInput = document.getElementById("import-json-input");
+    const exportMenuBtn = document.getElementById("export-menu-btn");
+    const exportMenu = document.getElementById("export-menu");
+    const exportHtmlBtn = document.getElementById("export-html-btn");
+    const exportJsonBtn = document.getElementById("export-json-btn");
+    const textToolbar = document.getElementById("text-toolbar");
+    const fontSizeInput = document.getElementById("font-size-input");
+    const textUppercaseBtn = document.getElementById("text-uppercase-btn");
+    const textLowercaseBtn = document.getElementById("text-lowercase-btn");
+    const textCapitalizeBtn = document.getElementById("text-capitalize-btn");
+    const textAlignLeftBtn = document.getElementById("text-align-left-btn");
+    const textAlignCenterBtn = document.getElementById("text-align-center-btn");
+    const textAlignRightBtn = document.getElementById("text-align-right-btn");
+    const textBoldBtn = document.getElementById("text-bold-btn");
+    const textItalicBtn = document.getElementById("text-italic-btn");
+    const presentationNav = document.getElementById("presentation-nav");
+    const presentationNavPrevBtn = document.getElementById("presentation-nav-prev");
+    const presentationNavNextBtn = document.getElementById("presentation-nav-next");
+
+    const CANVAS_CENTER_X = 2500;
+    const CANVAS_CENTER_Y = 2500;
+
+    const frameDomMap = new Map();
+    const elementHandlesMap = new Map(); // Maps element id to handle DOM element
+
+    let inPresentationMode = false;
+    let currentFrameIndex = -1;
+    let hoveredElementId = null;
+    let exportMenuVisible = false;
+
+    function clampFrameIndex(value, framesLength) {
+      if (framesLength <= 0) return -1;
+      if (typeof value !== "number" || !Number.isFinite(value)) return 0;
+      const rounded = Math.round(value);
+      return Math.min(Math.max(rounded, 0), framesLength - 1);
+    }
+
+    function sanitizeNumber(value, fallback = 0) {
+      return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+    }
+
+    function openExportMenu() {
+      if (exportMenuVisible) return;
+      exportMenu.classList.add("visible");
+      exportMenuVisible = true;
+    }
+
+    function closeExportMenu() {
+      if (!exportMenuVisible) return;
+      exportMenu.classList.remove("visible");
+      exportMenuVisible = false;
+    }
+
+    function toggleExportMenu() {
+      if (exportMenuVisible) {
+        closeExportMenu();
+      } else {
+        openExportMenu();
+      }
+    }
+
+    function sanitizeImportedState(state) {
+      if (!state || typeof state !== "object") {
+        throw new Error("Invalid file.");
+      }
+      if (!Array.isArray(state.elements) || !Array.isArray(state.frames)) {
+        throw new Error("Missing elements or frames.");
+      }
+      const elements = state.elements.map((el) => ({ ...el }));
+      const frames = state.frames.map((frame) => ({ ...frame }));
+      const camera = state.camera && typeof state.camera === "object"
+        ? {
+            x: sanitizeNumber(state.camera.x),
+            y: sanitizeNumber(state.camera.y),
+            scale: sanitizeNumber(state.camera.scale, 1),
+          }
+        : { x: 0, y: 0, scale: 1 };
+      const activeFrameIndex = clampFrameIndex(state.activeFrameIndex, frames.length);
+      const currentFrameIndex = clampFrameIndex(state.currentFrameIndex, frames.length);
+      return {
+        elements,
+        frames,
+        camera,
+        activeFrameIndex,
+        currentFrameIndex,
+      };
+    }
+
+    function importPresentationState(state) {
+      const sanitized = sanitizeImportedState(state);
+      if (inPresentationMode) {
+        exitPresentationMode();
+      }
+      restoreState(sanitized);
+      renderFramesList();
+      renderFrameOverlays();
+      renderElementHandles();
+      playerStatus.textContent = "Presentation imported.";
+      setTimeout(() => {
+        if (playerStatus.textContent === "Presentation imported.") {
+          playerStatus.textContent = "";
+        }
+      }, 3000);
+    }
+
+    // ===== CAMERA / WORLD HELPERS =====
+    function updateCanvasTransform() {
+      canvas.style.transform = `translate(${camera.x}px, ${camera.y}px) scale(${camera.scale})`;
+      renderFrameOverlays();
+      renderElementHandles();
+      updateTextToolbar();
+    }
+
+    // ===== HISTORY (UNDO / REDO) =====
+    function snapshotState() {
+      return {
+        elements: elements.map((el) => ({ ...el })),
+        frames: frames.map((frame) => ({ ...frame })),
+        camera: { ...camera },
+        activeFrameIndex,
+        currentFrameIndex,
+      };
+    }
+
+    function pushHistoryState() {
+      if (isRestoringState) return;
+      undoStack.push(snapshotState());
+      if (undoStack.length > HISTORY_LIMIT) {
+        undoStack.shift();
+      }
+      redoStack.length = 0;
+    }
+
+    function restoreState(state) {
+      isRestoringState = true;
+
+      // Restore elements
+      elements.length = 0;
+      canvas.innerHTML = "";
+      elementHandlesMap.forEach((handle) => handle.remove());
+      elementHandlesMap.clear();
+      state.elements.forEach((el) => {
+        const clone = { ...el };
+        elements.push(clone);
+        createElementDOM(clone);
+      });
+
+      // Restore frames
+      frames.length = 0;
+      frameDomMap.forEach((div) => div.remove());
+      frameDomMap.clear();
+      state.frames.forEach((frame) => {
+        const clone = { ...frame };
+        frames.push(clone);
+      });
+      activeFrameIndex = typeof state.activeFrameIndex === "number" ? state.activeFrameIndex : -1;
+      currentFrameIndex = typeof state.currentFrameIndex === "number" ? state.currentFrameIndex : -1;
+      renderFramesList();
+      renderFrameOverlays();
+
+      // Restore camera
+      camera.x = state.camera.x;
+      camera.y = state.camera.y;
+      camera.scale = state.camera.scale;
+      updateCanvasTransform();
+
+      // Reset selections
+      selectedElementIds = [];
+      selectedElementId = null;
+
+      renderLayers();
+      renderElementHandles();
+      updateElementSelectionHighlight();
+      isRestoringState = false;
+    }
+
+    function undo() {
+      if (!undoStack.length) return;
+      const previousState = undoStack.pop();
+      redoStack.push(snapshotState());
+      restoreState(previousState);
+    }
+
+    function redo() {
+      if (!redoStack.length) return;
+      const nextState = redoStack.pop();
+      undoStack.push(snapshotState());
+      restoreState(nextState);
+    }
+
+    function ensureTextEditHistory() {
+      if (!textEditHistoryArmed) {
+        pushHistoryState();
+        textEditHistoryArmed = true;
+      }
+      clearTimeout(textEditHistoryTimer);
+      textEditHistoryTimer = setTimeout(() => {
+        textEditHistoryArmed = false;
+      }, 600);
+    }
+
+    function screenToCanvas(sx, sy) {
+      return {
+        x: (sx - camera.x) / camera.scale,
+        y: (sy - camera.y) / camera.scale,
+      };
+    }
+
+    function getViewportCenterCanvasCoords() {
+      const rect = viewport.getBoundingClientRect();
+      const centerScreenX = rect.width / 2;
+      const centerScreenY = rect.height / 2;
+      return screenToCanvas(centerScreenX, centerScreenY);
+    }
+
+    // ===== ELEMENTS =====
+    function createElementDOM(el) {
+      const div = document.createElement("div");
+      div.dataset.id = el.id;
+      div.style.left = el.x + "px";
+      div.style.top = el.y + "px";
+
+      let resizingText = false;
+      let textResizeStartY = 0;
+      let startFontSize = el.fontSize || 18;
+
+      if (el.type === "text") {
+        div.className = "element text-element";
+        div.contentEditable = inPresentationMode ? "false" : "true";
+        div.textContent = el.text;
+        if (el.fontSize) div.style.fontSize = el.fontSize + "px";
+        if (el.textAlign) div.style.textAlign = el.textAlign;
+        if (el.fontWeight) div.style.fontWeight = el.fontWeight;
+        if (el.fontStyle) div.style.fontStyle = el.fontStyle;
+        const textResizeHandle = document.createElement("div");
+        textResizeHandle.className = "text-resize-handle";
+        textResizeHandle.setAttribute("contenteditable", "false");
+        div.appendChild(textResizeHandle);
+        textResizeHandle.addEventListener("mousedown", (e) => {
+          if (inPresentationMode || el.locked) return;
+          pushHistoryState();
+          resizingText = true;
+          e.stopPropagation();
+          textResizeStartY = e.clientY;
+          startFontSize =
+            el.fontSize ||
+            parseFloat(window.getComputedStyle(div).fontSize || "18") / camera.scale;
+        });
+      } else if (el.type === "image") {
+        div.className = "element image-element";
+        if (el.width && el.height) {
+          div.style.width = el.width + "px";
+          div.style.height = el.height + "px";
+        }
+        const img = document.createElement("img");
+        img.src = el.src;
+        img.alt = "Image";
+        div.appendChild(img);
+      }
+
+      // Add hover listeners for image elements to show handles
+      if (el.type === "image") {
+        div.addEventListener("mouseenter", () => {
+          hoveredElementId = el.id;
+          renderElementHandles();
+        });
+        div.addEventListener("mouseleave", () => {
+          hoveredElementId = null;
+          renderElementHandles();
+        });
+      }
+
+      let dragging = false;
+      let offsetXCanvas = 0;
+      let offsetYCanvas = 0;
+
+      div.addEventListener("mousedown", (e) => {
+        if (inPresentationMode) return; // Disable dragging in presentation mode
+        if (e.target.classList.contains("text-resize-handle")) return;
+        if (el.locked) return; // Disable dragging if locked
+        pushHistoryState();
+        dragging = true;
+        e.stopPropagation();
+        const rect = div.getBoundingClientRect();
+        const scale = camera.scale;
+        offsetXCanvas = (e.clientX - rect.left) / scale;
+        offsetYCanvas = (e.clientY - rect.top) / scale;
+      });
+
+      // Resize for image elements (handled in renderElementHandles)
+
+      window.addEventListener("mousemove", (e) => {
+        if (resizingText) {
+          const delta = textResizeStartY - e.clientY;
+          const newFontScreen = Math.max(8, startFontSize * camera.scale + delta);
+          const newFontWorld = newFontScreen / camera.scale;
+          const element = elements.find((el2) => el2.id === el.id);
+          if (element) {
+            element.fontSize = newFontWorld;
+            div.style.fontSize = newFontWorld + "px";
+            if (fontSizeInput && !textToolbar.classList.contains("disabled")) {
+              fontSizeInput.value = Math.round(newFontScreen);
+            }
+          }
+          return;
+        }
+        if (dragging) {
+          const canvasRect = canvas.getBoundingClientRect();
+          const scale = camera.scale;
+
+          const pointerCanvasX = (e.clientX - canvasRect.left) / scale;
+          const pointerCanvasY = (e.clientY - canvasRect.top) / scale;
+
+          const newX = pointerCanvasX - offsetXCanvas;
+          const newY = pointerCanvasY - offsetYCanvas;
+
+          // Update main element
+          div.style.left = newX + "px";
+          div.style.top = newY + "px";
+
+          const element = elements.find((el2) => el2.id === el.id);
+          if (element) {
+            element.x = newX;
+            element.y = newY;
+            renderElementHandles();
+          }
+        }
+      });
+
+      window.addEventListener("mouseup", () => {
+        dragging = false;
+        resizingText = false;
+      });
+
+      div.addEventListener("click", (e) => {
+        if (inPresentationMode) return;
+        if (e.target.classList.contains("text-resize-handle")) return;
+        const additive = e.ctrlKey || e.metaKey;
+        toggleElementSelection(el.id, additive);
+      });
+
+      if (el.type === "text") {
+        div.addEventListener("input", () => {
+          if (inPresentationMode) return; // Disable editing in presentation mode
+          ensureTextEditHistory();
+          const element = elements.find((el2) => el2.id === el.id);
+          if (element) element.text = div.textContent;
+        });
+      }
+
+      canvas.appendChild(div);
+      if (el.type === "image") {
+        renderElementHandles();
+      }
+      renderLayers();
+      updateElementScaleStyles();
+    }
+
+    // ===== LAYERS PANEL =====
+    function renderLayers() {
+      if (!layersList) return; // Safety check
+      layersList.innerHTML = "";
+
+      // Render elements in reverse order (first in array = bottom layer = bottom of list)
+      const ungroupedElements = elements;
+      for (let i = ungroupedElements.length - 1; i >= 0; i--) {
+        const layerItem = createLayerItem(ungroupedElements[i]);
+        layersList.insertBefore(layerItem, layersList.firstChild);
+      }
+
+      updateElementSelectionHighlight();
+    }
+
+    function updateElementSelectionHighlight() {
+      elements.forEach((el) => {
+        const elementDiv = canvas.querySelector(`[data-id="${el.id}"]`);
+        if (elementDiv) {
+          elementDiv.classList.toggle("layer-selected", selectedElementIds.includes(el.id));
+        }
+      });
+      updateLayerSelectionHighlight();
+      updateElementScaleStyles();
+    }
+
+    function updateLayerSelectionHighlight() {
+      if (!layersList) return;
+      const items = layersList.querySelectorAll(".layer-item");
+      items.forEach((item) => {
+        const elementId = item.dataset.elementId;
+        if (!elementId) return;
+        item.classList.toggle("selected", selectedElementIds.includes(elementId));
+      });
+      updateTextToolbar();
+    }
+
+    function toggleElementSelection(elementId, additive = false) {
+      if (!elementId) return;
+      if (additive) {
+        const idx = selectedElementIds.indexOf(elementId);
+        if (idx > -1) {
+          selectedElementIds.splice(idx, 1);
+          if (selectedElementId === elementId) {
+            selectedElementId =
+              selectedElementIds.length > 0
+                ? selectedElementIds[selectedElementIds.length - 1]
+                : null;
+          }
+        } else {
+          selectedElementIds.push(elementId);
+          selectedElementId = elementId;
+        }
+      } else {
+        selectedElementIds = [elementId];
+        selectedElementId = elementId;
+      }
+      updateElementSelectionHighlight();
+    }
+
+    function getSelectedTextElements() {
+      return selectedElementIds
+        .map((id) => elements.find((el) => el.id === id && el.type === "text"))
+        .filter(Boolean);
+    }
+
+    function getPrimaryTextElement() {
+      const primary =
+        selectedElementIds.length > 0
+          ? elements.find(
+              (el) => el.id === selectedElementIds[selectedElementIds.length - 1] && el.type === "text"
+            )
+          : null;
+      if (primary) return primary;
+      return getSelectedTextElements()[0] || null;
+    }
+
+    function updateTextToolbar() {
+      if (!textToolbar || !fontSizeInput) return;
+      const textElement = getPrimaryTextElement();
+      if (!textElement) {
+        textToolbar.classList.add("disabled");
+        textToolbar.classList.add("hidden");
+        fontSizeInput.value = "";
+        return;
+      }
+      textToolbar.classList.remove("hidden");
+      textToolbar.classList.remove("disabled");
+      const screenFontSize = Math.round((textElement.fontSize || 18) * camera.scale);
+      fontSizeInput.value = screenFontSize;
+    }
+
+    function updateElementScaleStyles() {
+      const borderPx = Math.max(0.4, 1 / camera.scale);
+      const selectionShadow = Math.max(0.4, 1 / camera.scale);
+      const focusShadow = Math.max(0.3, 0.6 / camera.scale);
+      elements.forEach((el) => {
+        const div = canvas.querySelector(`[data-id="${el.id}"]`);
+        if (!div) return;
+        div.style.setProperty("--element-border-width", borderPx + "px");
+        div.style.setProperty("--element-selection-shadow", selectionShadow + "px");
+        div.style.setProperty("--element-focus-shadow", focusShadow + "px");
+      });
+    }
+
+    function applyFontSize(sizePx) {
+      const value = parseFloat(sizePx);
+      if (!value || value <= 0) return;
+      const targets = getSelectedTextElements();
+      if (!targets.length) return;
+      pushHistoryState();
+      const worldSize = value / camera.scale;
+      targets.forEach((el) => {
+        el.fontSize = worldSize;
+        const div = canvas.querySelector(`[data-id="${el.id}"]`);
+        if (div) {
+          div.style.fontSize = worldSize + "px";
+        }
+      });
+      updateTextToolbar();
+    }
+
+    function applyTextTransform(mode) {
+      const targets = getSelectedTextElements();
+      if (!targets.length) return;
+      pushHistoryState();
+      targets.forEach((el) => {
+        const original = el.text || "";
+        let transformed = original;
+        if (mode === "upper") transformed = original.toUpperCase();
+        else if (mode === "lower") transformed = original.toLowerCase();
+        else if (mode === "capitalize") {
+          transformed = original
+            .split(" ")
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(" ");
+        }
+        el.text = transformed;
+        const div = canvas.querySelector(`[data-id="${el.id}"]`);
+        if (div) {
+          div.textContent = transformed;
+        }
+      });
+      renderLayers();
+    }
+
+    function applyTextAlignment(alignment) {
+      const targets = getSelectedTextElements();
+      if (!targets.length) return;
+      pushHistoryState();
+      targets.forEach((el) => {
+        const div = canvas.querySelector(`[data-id="${el.id}"]`);
+        el.textAlign = alignment;
+        if (div) {
+          div.style.textAlign = alignment;
+        }
+      });
+    }
+
+    function toggleTextStyle(style) {
+      const targets = getSelectedTextElements();
+      if (!targets.length) return;
+      pushHistoryState();
+      targets.forEach((el) => {
+        const div = canvas.querySelector(`[data-id="${el.id}"]`);
+        if (style === "bold") {
+          el.fontWeight = el.fontWeight === "bold" ? "normal" : "bold";
+          if (div) div.style.fontWeight = el.fontWeight;
+        } else if (style === "italic") {
+          el.fontStyle = el.fontStyle === "italic" ? "normal" : "italic";
+          if (div) div.style.fontStyle = el.fontStyle;
+        }
+      });
+    }
+
+    if (fontSizeInput) {
+      fontSizeInput.addEventListener("change", () => applyFontSize(fontSizeInput.value));
+      fontSizeInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          applyFontSize(fontSizeInput.value);
+        }
+      });
+    }
+
+    if (textUppercaseBtn) {
+      textUppercaseBtn.addEventListener("click", () => applyTextTransform("upper"));
+    }
+    if (textLowercaseBtn) {
+      textLowercaseBtn.addEventListener("click", () => applyTextTransform("lower"));
+    }
+    if (textCapitalizeBtn) {
+      textCapitalizeBtn.addEventListener("click", () => applyTextTransform("capitalize"));
+    }
+    if (textAlignLeftBtn) {
+      textAlignLeftBtn.addEventListener("click", () => applyTextAlignment("left"));
+    }
+    if (textAlignCenterBtn) {
+      textAlignCenterBtn.addEventListener("click", () => applyTextAlignment("center"));
+    }
+    if (textAlignRightBtn) {
+      textAlignRightBtn.addEventListener("click", () => applyTextAlignment("right"));
+    }
+    if (textBoldBtn) {
+      textBoldBtn.addEventListener("click", () => toggleTextStyle("bold"));
+    }
+    if (textItalicBtn) {
+      textItalicBtn.addEventListener("click", () => toggleTextStyle("italic"));
+    }
+
+    function createLayerItem(el) {
+      const item = document.createElement("div");
+      item.className = "layer-item";
+      item.dataset.elementId = el.id;
+      if (selectedElementIds.includes(el.id)) {
+        item.classList.add("selected");
+      }
+
+      const icon = el.type === "image" ? "🖼️" : "📝";
+      const name = el.name || (el.type === "image" ? "Image" : (el.text?.substring(0, 20) || "Text"));
+
+      const lockIcon = el.locked ? "🔒" : "🔓";
+      item.innerHTML = `
+        <span class="layer-icon">${icon}</span>
+        <span class="layer-name" ondblclick="event.stopPropagation(); beginLayerRename('${el.id}', this);">${name}</span>
+        <div class="layer-actions">
+          <button class="layer-action-btn" title="${el.locked ? 'Unlock' : 'Lock'}" onclick="event.stopPropagation(); toggleLock('${el.id}')">${lockIcon}</button>
+          <button class="layer-action-btn" title="Delete" onclick="event.stopPropagation(); deleteElement('${el.id}')">×</button>
+        </div>
+      `;
+
+      // Click to select
+      item.addEventListener("click", (e) => {
+        if (e.target.classList.contains("layer-action-btn")) return;
+        const additive = e.ctrlKey || e.metaKey;
+        toggleElementSelection(el.id, additive);
+
+        // Focus on element
+        const elementDiv = canvas.querySelector(`[data-id="${el.id}"]`);
+        if (elementDiv) {
+          elementDiv.focus();
+        }
+      });
+
+      // Drag and drop for reordering
+      item.draggable = true;
+      item.addEventListener("dragstart", (e) => {
+        e.dataTransfer.setData("text/plain", el.id);
+        item.classList.add("dragging");
+      });
+
+      item.addEventListener("dragend", () => {
+        item.classList.remove("dragging");
+        document.querySelectorAll(".layer-item").forEach((li) => {
+          li.classList.remove("drag-over");
+        });
+      });
+
+      item.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        item.classList.add("drag-over");
+      });
+
+      item.addEventListener("dragleave", () => {
+        item.classList.remove("drag-over");
+      });
+
+      item.addEventListener("drop", (e) => {
+        e.preventDefault();
+        item.classList.remove("drag-over");
+        const draggedId = e.dataTransfer.getData("text/plain");
+        reorderElement(draggedId, el.id);
+      });
+
+      return item;
+    }
+
+    function beginLayerRename(elementId, nameElement) {
+      const el = elements.find((e) => e.id === elementId);
+      if (!el) return;
+
+      const currentName = el.name || (el.type === "image" ? "Image" : (el.text?.substring(0, 20) || "Text"));
+
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = currentName;
+      input.className = "layer-name-edit";
+      input.maxLength = 60;
+      nameElement.replaceWith(input);
+      input.focus();
+      input.select();
+
+      const commit = () => {
+        const newName = input.value.trim() || currentName;
+        el.name = newName;
+        renderLayers();
+      };
+
+      const cancel = () => {
+        renderLayers();
+      };
+
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          commit();
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          cancel();
+        }
+      });
+
+      input.addEventListener("blur", commit);
+    }
+
+    function reorderElement(draggedId, targetId) {
+      const draggedIndex = elements.findIndex((e) => e.id === draggedId);
+      const targetIndex = elements.findIndex((e) => e.id === targetId);
+      if (draggedIndex === -1 || targetIndex === -1) return;
+
+      // Since layers list is displayed in reverse order:
+      // - First element in array = appears at bottom of list = behind (first in DOM)
+      // - Last element in array = appears at top of list = on top (last in DOM)
+      // When dragging in the reversed list, we need to reverse the target index
+      const reversedLength = elements.length;
+      const reversedDraggedIndex = reversedLength - 1 - draggedIndex;
+      const reversedTargetIndex = reversedLength - 1 - targetIndex;
+      
+      // Calculate new position in array
+      // If dragging towards top of list (higher in reversed), move to later in array (on top)
+      // If dragging towards bottom of list (lower in reversed), move to earlier in array (behind)
+      const newReversedIndex = reversedTargetIndex;
+      const newIndex = reversedLength - 1 - newReversedIndex;
+      
+      const [dragged] = elements.splice(draggedIndex, 1);
+      
+      // Adjust index after removal
+      let insertIndex = newIndex;
+      if (draggedIndex < newIndex) {
+        insertIndex = newIndex - 1;
+      }
+      
+      elements.splice(insertIndex, 0, dragged);
+
+      // Update DOM order - re-append all elements in array order
+      // First in array = first in DOM (behind), last in array = last in DOM (on top)
+      elements.forEach((el) => {
+        const div = canvas.querySelector(`[data-id="${el.id}"]`);
+        if (div) {
+          canvas.appendChild(div); // Append moves to end, so we rebuild order
+        }
+      });
+
+      renderLayers();
+    }
+
+    function deleteElement(elementId) {
+      const index = elements.findIndex((e) => e.id === elementId);
+      if (index === -1) return;
+
+      pushHistoryState();
+
+      // Remove element
+      elements.splice(index, 1);
+      const elementDiv = canvas.querySelector(`[data-id="${elementId}"]`);
+      if (elementDiv) elementDiv.remove();
+
+      // Remove handle if exists
+      const handle = elementHandlesMap.get(elementId);
+      if (handle) {
+        handle.remove();
+        elementHandlesMap.delete(elementId);
+      }
+
+      if (selectedElementId === elementId) {
+        selectedElementId = null;
+      }
+      selectedElementIds = selectedElementIds.filter((id) => id !== elementId);
+
+      renderLayers();
+      renderElementHandles();
+    }
+
+    function toggleLock(elementId) {
+      const el = elements.find((e) => e.id === elementId);
+      if (el) {
+        pushHistoryState();
+        el.locked = !el.locked;
+        const elementDiv = canvas.querySelector(`[data-id="${elementId}"]`);
+        if (elementDiv) {
+          elementDiv.style.pointerEvents = el.locked ? "none" : "auto";
+          elementDiv.style.opacity = el.locked ? "0.6" : "1";
+        }
+        renderLayers();
+      }
+    }
+
+    // Make functions globally accessible for onclick handlers
+    window.deleteElement = deleteElement;
+    window.toggleLock = toggleLock;
+    window.beginLayerRename = beginLayerRename;
+
+    // ===== ELEMENT HANDLES (screen space) =====
+    let resizingElementId = null;
+    let resizeStartScreenX = 0;
+    let resizeStartScreenY = 0;
+    let resizeStartWidth = 0;
+    let resizeStartHeight = 0;
+    let resizeStartAspectRatio = 1;
+
+    function renderElementHandles() {
+      // Don't render handles in presentation mode
+      if (inPresentationMode) {
+        elementHandlesOverlay.innerHTML = "";
+        elementHandlesMap.clear();
+        return;
+      }
+
+      // Clean up handles for elements that no longer exist
+      for (const [id, handle] of elementHandlesMap.entries()) {
+        if (!elements.find((el) => el.id === id && el.type === "image")) {
+          handle.remove();
+          elementHandlesMap.delete(id);
+        }
+      }
+
+      // Create/update handles for image elements
+      elements.forEach((el) => {
+        if (el.type !== "image" || !el.width || !el.height) return;
+
+        let handle = elementHandlesMap.get(el.id);
+        if (!handle) {
+          handle = document.createElement("div");
+          handle.className = "element-resize-handle";
+          handle.dataset.elementId = el.id;
+          elementHandlesOverlay.appendChild(handle);
+          elementHandlesMap.set(el.id, handle);
+
+          // Add resize event listeners
+          handle.addEventListener("mousedown", (e) => {
+            resizingElementId = el.id;
+            e.stopPropagation();
+            resizeStartScreenX = e.clientX;
+            resizeStartScreenY = e.clientY;
+            resizeStartWidth = el.width;
+            resizeStartHeight = el.height;
+            resizeStartAspectRatio = resizeStartWidth / resizeStartHeight;
+          });
+        }
+
+        // Calculate screen position of element's bottom-right corner
+        const screenX = camera.x + el.x * camera.scale + el.width * camera.scale;
+        const screenY = camera.y + el.y * camera.scale + el.height * camera.scale;
+
+        handle.style.left = screenX + "px";
+        handle.style.top = screenY + "px";
+        handle.classList.toggle("visible", hoveredElementId === el.id);
+      });
+    }
+
+    // Global resize handler for element handles
+    window.addEventListener("mousemove", (e) => {
+      if (resizingElementId) {
+        const element = elements.find((el) => el.id === resizingElementId);
+        if (element && element.type === "image") {
+          const scale = camera.scale;
+          const dxScreen = e.clientX - resizeStartScreenX;
+          const dyScreen = e.clientY - resizeStartScreenY;
+          const dxWorld = dxScreen / scale;
+
+          // Calculate new size maintaining aspect ratio
+          const newWidth = Math.max(50 / scale, resizeStartWidth + dxWorld);
+          const newHeight = newWidth / resizeStartAspectRatio;
+
+          element.width = newWidth;
+          element.height = newHeight;
+
+          // Update element DOM
+          const elementDiv = canvas.querySelector(`[data-id="${element.id}"]`);
+          if (elementDiv) {
+            elementDiv.style.width = newWidth + "px";
+            elementDiv.style.height = newHeight + "px";
+          }
+
+          renderElementHandles();
+        }
+      }
+    });
+
+    window.addEventListener("mouseup", () => {
+      resizingElementId = null;
+    });
+
+    // ===== EXPORT =====
+    function convertElementImageToDataUrl(elementId) {
+      return new Promise((resolve) => {
+        const elementDiv = canvas.querySelector(`[data-id="${elementId}"]`);
+        if (!elementDiv) {
+          resolve(null);
+          return;
+        }
+        const img = elementDiv.querySelector("img");
+        if (!img) {
+          resolve(null);
+          return;
+        }
+
+        const capture = () => {
+          try {
+            const tempCanvas = document.createElement("canvas");
+            const width = img.naturalWidth || img.width;
+            const height = img.naturalHeight || img.height;
+            if (!width || !height) {
+              resolve(null);
+              return;
+            }
+            tempCanvas.width = width;
+            tempCanvas.height = height;
+            const ctx = tempCanvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(tempCanvas.toDataURL("image/png"));
+          } catch (_) {
+            resolve(null);
+          }
+        };
+
+        if (img.complete && img.naturalWidth) {
+          capture();
+        } else {
+          img.addEventListener("load", capture, { once: true });
+          img.addEventListener(
+            "error",
+            () => resolve(null),
+            { once: true }
+          );
+        }
+      });
+    }
+
+    async function prepareStateForExport(state) {
+      const tasks = state.elements
+        .filter((el) => el.type === "image")
+        .map(async (el) => {
+          const dataUrl = await convertElementImageToDataUrl(el.id);
+          if (dataUrl) {
+            el.src = dataUrl;
+          }
+        });
+      await Promise.all(tasks);
+    }
+
+    async function exportPresentationAsHTML() {
+      if (!frames.length) {
+        playerStatus.textContent = "Add a frame before exporting.";
+        setTimeout(() => {
+          if (playerStatus.textContent === "Add a frame before exporting.") {
+            playerStatus.textContent = "";
+          }
+        }, 3000);
+        return;
+      }
+      closeExportMenu();
+      const state = snapshotState();
+      await prepareStateForExport(state);
+
+      const serializedState = JSON.stringify(state).replace(/</g, "\\u003c");
+      const stateScript = `<script>window.__PRESENTATION_EXPORT__ = ${serializedState};<\/script>`;
+      const presentationFlagScript = `<script>window.__EXPORT_PRESENTATION_ONLY__ = true;<\/script>`;
+      const scriptsToInject = stateScript + "\n" + presentationFlagScript;
+      const docHtml = document.documentElement.outerHTML;
+      const scriptIndex = docHtml.indexOf("<script");
+      let htmlWithState = docHtml;
+      if (scriptIndex !== -1) {
+        htmlWithState =
+          docHtml.slice(0, scriptIndex) +
+          scriptsToInject +
+          "\n" +
+          docHtml.slice(scriptIndex);
+      } else {
+        htmlWithState = docHtml + scriptsToInject;
+      }
+      const finalHtml = "<!DOCTYPE html>\n" + htmlWithState;
+      const blob = new Blob([finalHtml], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "presentation.html";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+
+      playerStatus.textContent = "Presentation exported as HTML.";
+      setTimeout(() => {
+        if (playerStatus.textContent === "Presentation exported as HTML.") {
+          playerStatus.textContent = "";
+        }
+      }, 3000);
+    }
+
+    async function exportPresentationAsJSON() {
+      if (!frames.length) {
+        playerStatus.textContent = "Add a frame before exporting.";
+        setTimeout(() => {
+          if (playerStatus.textContent === "Add a frame before exporting.") {
+            playerStatus.textContent = "";
+          }
+        }, 3000);
+        return;
+      }
+      closeExportMenu();
+      const state = snapshotState();
+      await prepareStateForExport(state);
+      const payload = JSON.stringify(state, null, 2);
+      const blob = new Blob([payload], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "presentation.json";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+
+      playerStatus.textContent = "Presentation exported as JSON.";
+      setTimeout(() => {
+        if (playerStatus.textContent === "Presentation exported as JSON.") {
+          playerStatus.textContent = "";
+        }
+      }, 3000);
+    }
+
+    function addTextBox() {
+      pushHistoryState();
+      const id = "el_" + Date.now();
+      const center = getViewportCenterCanvasCoords();
+
+      // Calculate based on viewport size to ensure text is always reasonably sized
+      const vpRect = viewport.getBoundingClientRect();
+      const zoomFactor = Math.max(1, camera.scale);
+      const baseTextWidth = Math.min(260, vpRect.width * 0.25);
+      const baseTextHeight = Math.min(120, vpRect.height * 0.18);
+      const screenWidth = Math.max(40, baseTextWidth / zoomFactor);
+      const screenHeight = Math.max(20, baseTextHeight / zoomFactor);
+      
+      // Always use actual camera scale to maintain consistent screen appearance
+      const worldWidth = screenWidth / camera.scale;
+      const worldHeight = screenHeight / camera.scale;
+
+      const screenFontSize = Math.max(10, Math.min(20, (vpRect.height * 0.03) / Math.sqrt(zoomFactor)));
+      const worldFontSize = screenFontSize / camera.scale;
+
+      const el = {
+        id,
+        type: "text",
+        x: center.x - worldWidth / 2,
+        y: center.y - worldHeight / 2,
+        text: "Type here...",
+        fontSize: worldFontSize
+      };
+      elements.push(el);
+      createElementDOM(el);
+      renderLayers();
+    }
+
+    function addImageElementFromFile(file) {
+      if (!file.type.startsWith("image/")) return;
+      const url = URL.createObjectURL(file);
+      const id = "el_img_" + Date.now() + "_" + Math.random().toString(16).slice(2);
+
+      const img = new Image();
+      img.onload = () => {
+        pushHistoryState();
+        // Calculate based on viewport size & zoom to ensure images are sized reasonably
+        const vpRect = viewport.getBoundingClientRect();
+        const zoomFactor = Math.max(1, camera.scale);
+        const baseImgWidth = Math.min(600, vpRect.width * 0.35);
+        const baseImgHeight = Math.min(450, vpRect.height * 0.35);
+        const maxWidthScreen = Math.max(40, baseImgWidth / zoomFactor);
+        const maxHeightScreen = Math.max(30, baseImgHeight / zoomFactor);
+
+        let widthScreen = img.naturalWidth;
+        let heightScreen = img.naturalHeight;
+        const ratio = Math.min(maxWidthScreen / widthScreen, maxHeightScreen / heightScreen, 1);
+        widthScreen *= ratio;
+        heightScreen *= ratio;
+
+        // Always use actual camera scale to maintain consistent screen appearance
+        const worldWidth = widthScreen / camera.scale;
+        const worldHeight = heightScreen / camera.scale;
+
+        const center = getViewportCenterCanvasCoords();
+
+        const el = {
+          id,
+          type: "image",
+          x: center.x - worldWidth / 2,
+          y: center.y - worldHeight / 2,
+          src: url,
+          width: worldWidth,
+          height: worldHeight
+        };
+        elements.push(el);
+        createElementDOM(el);
+        renderElementHandles();
+        renderLayers();
+      };
+      img.src = url;
+    }
+
+    // ===== FRAMES =====
+    function worldFrameToScreen(frame) {
+      return {
+        x: camera.x + frame.x * camera.scale,
+        y: camera.y + frame.y * camera.scale,
+        width: frame.width * camera.scale,
+        height: frame.height * camera.scale
+      };
+    }
+
+    function updateFrameDomPosition(frame, div) {
+      const r = worldFrameToScreen(frame);
+      div.style.left = r.x + "px";
+      div.style.top = r.y + "px";
+      div.style.width = r.width + "px";
+      div.style.height = r.height + "px";
+    }
+
+    function setActiveFrameHighlight() {
+      frames.forEach((frame, idx) => {
+        const div = frameDomMap.get(frame.id);
+        if (!div) return;
+        div.classList.toggle("active", idx === activeFrameIndex);
+        // Only active & unlocked frame gets pointer events
+        if (idx === activeFrameIndex && !frame.locked) {
+          div.classList.add("interactive");
+        } else {
+          div.classList.remove("interactive");
+        }
+      });
+    }
+
+    function createFrameDOM(frame) {
+      const div = document.createElement("div");
+      div.className = "frame-rect";
+      div.dataset.frameId = frame.id;
+
+      const handle = document.createElement("div");
+      handle.className = "frame-resize-handle";
+      div.appendChild(handle);
+
+      updateFrameDomPosition(frame, div);
+
+      // Drag frame – only if active & unlocked
+      let dragging = false;
+      let dragStartScreenX = 0;
+      let dragStartScreenY = 0;
+      let startX = 0;
+      let startY = 0;
+
+      div.addEventListener("mousedown", (e) => {
+        const idx = frames.findIndex((f) => f.id === frame.id);
+        if (frame.locked || idx !== activeFrameIndex) return;
+        if (e.target === handle) return;
+        pushHistoryState();
+        dragging = true;
+        e.stopPropagation();
+        dragStartScreenX = e.clientX;
+        dragStartScreenY = e.clientY;
+        startX = frame.x;
+        startY = frame.y;
+      });
+
+      // Resize frame – only if active & unlocked
+      let resizing = false;
+      let resizeStartScreenX = 0;
+      let resizeStartScreenY = 0;
+      let startWidth = 0;
+      let startHeight = 0;
+
+      handle.addEventListener("mousedown", (e) => {
+        const idx = frames.findIndex((f) => f.id === frame.id);
+        if (frame.locked || idx !== activeFrameIndex) return;
+        pushHistoryState();
+        resizing = true;
+        e.stopPropagation();
+        resizeStartScreenX = e.clientX;
+        resizeStartScreenY = e.clientY;
+        startWidth = frame.width;
+        startHeight = frame.height;
+      });
+
+      window.addEventListener("mousemove", (e) => {
+        if (dragging) {
+          const dxScreen = e.clientX - dragStartScreenX;
+          const dyScreen = e.clientY - dragStartScreenY;
+          const dxWorld = dxScreen / camera.scale;
+          const dyWorld = dyScreen / camera.scale;
+          frame.x = startX + dxWorld;
+          frame.y = startY + dyWorld;
+          updateFrameDomPosition(frame, div);
+          renderFramesList();
+        } else if (resizing) {
+          const dxScreen = e.clientX - resizeStartScreenX;
+          const dyScreen = e.clientY - resizeStartScreenY;
+          const dxWorld = dxScreen / camera.scale;
+          const dyWorld = dyScreen / camera.scale;
+          frame.width = Math.max(50 / camera.scale, startWidth + dxWorld);
+          frame.height = Math.max(50 / camera.scale, startHeight + dyWorld);
+          updateFrameDomPosition(frame, div);
+          renderFramesList();
+        }
+      });
+
+      window.addEventListener("mouseup", () => {
+        dragging = false;
+        resizing = false;
+      });
+
+      frameOverlay.appendChild(div);
+      frameDomMap.set(frame.id, div);
+      setActiveFrameHighlight();
+    }
+
+    function renderFrameOverlays() {
+      // Don't render frame overlays in presentation mode
+      if (inPresentationMode) {
+        frameOverlay.innerHTML = "";
+        frameDomMap.clear();
+        return;
+      }
+
+      for (const [id, div] of frameDomMap.entries()) {
+        if (!frames.find((f) => f.id === id)) {
+          div.remove();
+          frameDomMap.delete(id);
+        }
+      }
+      frames.forEach((frame) => {
+        let div = frameDomMap.get(frame.id);
+        if (!div) {
+          createFrameDOM(frame);
+        } else {
+          updateFrameDomPosition(frame, div);
+        }
+      });
+      setActiveFrameHighlight();
+    }
+
+    function addFrameFromCurrentView() {
+      pushHistoryState();
+      const rect = viewport.getBoundingClientRect();
+      const topLeft = screenToCanvas(0, 0);
+      const bottomRight = screenToCanvas(rect.width, rect.height);
+
+      const id = "frame_" + Date.now();
+      const frame = {
+        id,
+        name: "Frame " + (frames.length + 1),
+        x: topLeft.x,
+        y: topLeft.y,
+        width: bottomRight.x - topLeft.x,
+        height: bottomRight.y - topLeft.y,
+        locked: false
+      };
+
+      frames.push(frame);
+      if (activeFrameIndex === -1) activeFrameIndex = 0;
+      renderFramesList();
+      renderFrameOverlays();
+    }
+
+    function toggleFrameLock(frameId) {
+      const frame = frames.find((f) => f.id === frameId);
+      if (!frame) return;
+      pushHistoryState();
+      frame.locked = !frame.locked;
+      renderFramesList();
+      renderFrameOverlays();
+    }
+
+    function deleteFrame(frameId) {
+      const index = frames.findIndex((f) => f.id === frameId);
+      if (index === -1) return;
+      pushHistoryState();
+      frames.splice(index, 1);
+      const dom = frameDomMap.get(frameId);
+      if (dom) {
+        dom.remove();
+        frameDomMap.delete(frameId);
+      }
+
+      if (!frames.length) {
+        activeFrameIndex = -1;
+        currentFrameIndex = -1;
+      } else {
+        if (activeFrameIndex === index) {
+          activeFrameIndex = Math.min(index, frames.length - 1);
+        } else if (activeFrameIndex > index) {
+          activeFrameIndex -= 1;
+        }
+
+        if (currentFrameIndex === index) {
+          currentFrameIndex = Math.min(index, frames.length - 1);
+        } else if (currentFrameIndex > index) {
+          currentFrameIndex -= 1;
+        }
+      }
+
+      renderFramesList();
+      renderFrameOverlays();
+    }
+
+    function renderFramesList() {
+      framesList.innerHTML = "";
+      frames.forEach((frame, idx) => {
+        const item = document.createElement("div");
+        let className = "frame-item";
+        if (idx === activeFrameIndex) className += " active";
+        if (frame.locked) className += " locked";
+        item.className = className;
+        item.dataset.frameId = frame.id;
+
+        const icon = document.createElement("span");
+        icon.className = "frame-icon";
+        icon.textContent = "#";
+
+        const info = document.createElement("div");
+        info.className = "frame-info";
+        const name = document.createElement("div");
+        name.className = "frame-name";
+        name.textContent = frame.name;
+        const meta = document.createElement("div");
+        meta.className = "frame-meta";
+        meta.textContent =
+          `x:${frame.x.toFixed(0)} y:${frame.y.toFixed(0)} w:${frame.width.toFixed(0)} h:${frame.height.toFixed(0)}`;
+        info.appendChild(name);
+        info.appendChild(meta);
+
+        const actions = document.createElement("div");
+        actions.className = "frame-actions";
+        const lockBtn = document.createElement("button");
+        lockBtn.className = "layer-action-btn";
+        lockBtn.title = frame.locked ? "Unlock frame" : "Lock frame";
+        lockBtn.textContent = frame.locked ? "🔒" : "🔓";
+        lockBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          toggleFrameLock(frame.id);
+        });
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "layer-action-btn";
+        deleteBtn.title = "Delete frame";
+        deleteBtn.textContent = "×";
+        deleteBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          deleteFrame(frame.id);
+        });
+        actions.appendChild(lockBtn);
+        actions.appendChild(deleteBtn);
+
+        item.appendChild(icon);
+        item.appendChild(info);
+        item.appendChild(actions);
+
+        item.addEventListener("click", () => {
+          activeFrameIndex = idx;
+          currentFrameIndex = idx;
+          focusOnFrame(frame, true);
+          renderFramesList();
+          renderFrameOverlays();
+        });
+
+        framesList.appendChild(item);
+      });
+      setActiveFrameHighlight();
+    }
+
+    // Focus camera on a frame
+    function focusOnFrame(frame, animate = false) {
+      const rect = viewport.getBoundingClientRect();
+      const margin = 40;
+      const availW = rect.width - margin * 2;
+      const availH = rect.height - margin * 2;
+
+      const scaleTarget = Math.min(availW / frame.width, availH / frame.height);
+      const clampedScale = Math.min(Math.max(scaleTarget, 0.0002), 600);
+
+      const frameCenterX = frame.x + frame.width / 2;
+      const frameCenterY = frame.y + frame.height / 2;
+
+      const centerScreenX = rect.width / 2;
+      const centerScreenY = rect.height / 2;
+
+      const target = {
+        scale: clampedScale,
+        x: centerScreenX - frameCenterX * clampedScale,
+        y: centerScreenY - frameCenterY * clampedScale
+      };
+
+      if (animate) {
+        animateCamera(
+          { x: camera.x, y: camera.y, scale: camera.scale },
+          target,
+          800
+        );
+      } else {
+        camera.x = target.x;
+        camera.y = target.y;
+        camera.scale = target.scale;
+        updateCanvasTransform();
+      }
+    }
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function animateCamera(from, to, duration = 800) {
+      return new Promise((resolve) => {
+        const start = performance.now();
+        function step(now) {
+          const t = Math.min(1, (now - start) / duration);
+          camera.x = lerp(from.x, to.x, t);
+          camera.y = lerp(from.y, to.y, t);
+          camera.scale = lerp(from.scale, to.scale, t);
+          updateCanvasTransform();
+          if (t < 1) {
+            requestAnimationFrame(step);
+          } else {
+            resolve();
+          }
+        }
+        requestAnimationFrame(step);
+      });
+    }
+
+    // ===== PRESENTATION MODE (← / → only) =====
+    function enterPresentationMode() {
+      if (!frames.length) {
+        playerStatus.textContent = "No frames to play.";
+        return;
+      }
+      closeExportMenu();
+      inPresentationMode = true;
+      currentFrameIndex = 0;
+      activeFrameIndex = 0;
+      
+      // Enter fullscreen and hide UI
+      document.body.classList.add("presentation-mode");
+      
+      // Request fullscreen if supported
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {
+          // Fullscreen not available, continue anyway
+        });
+      }
+      
+      focusOnFrame(frames[0], true);
+      renderFramesList();
+      presentationNav.classList.add("visible");
+      updatePresentationNavButtons();
+      
+      // Update play button text
+      const playBtn = document.getElementById("play-btn");
+      playBtn.textContent = "Exit Presentation";
+      
+      // Disable text editing for all text elements
+      elements.forEach((el) => {
+        if (el.type === "text") {
+          const elementDiv = canvas.querySelector(`[data-id="${el.id}"]`);
+          if (elementDiv) {
+            elementDiv.contentEditable = "false";
+          }
+        }
+      });
+      
+      playerStatus.textContent = "Presentation mode – use ← / →, Esc to exit";
+    }
+
+    function exitPresentationMode() {
+      inPresentationMode = false;
+      document.body.classList.remove("presentation-mode");
+      presentationNav.classList.remove("visible");
+      
+      // Exit fullscreen if in fullscreen
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {
+          // Ignore errors
+        });
+      }
+      
+      // Update play button text
+      const playBtn = document.getElementById("play-btn");
+      playBtn.textContent = "Play";
+      
+      // Re-enable text editing for all text elements
+      elements.forEach((el) => {
+        if (el.type === "text") {
+          const elementDiv = canvas.querySelector(`[data-id="${el.id}"]`);
+          if (elementDiv) {
+            elementDiv.contentEditable = "true";
+          }
+        }
+      });
+      
+      playerStatus.textContent = "";
+      renderFrameOverlays();
+      renderElementHandles();
+    }
+
+    function gotoFrame(index) {
+      if (index < 0 || index >= frames.length) return;
+      currentFrameIndex = index;
+      activeFrameIndex = index;
+      focusOnFrame(frames[index], true);
+      renderFramesList();
+      updatePresentationNavButtons();
+      // Don't render overlays in presentation mode
+      if (!inPresentationMode) {
+        renderFrameOverlays();
+      }
+    }
+
+    function updatePresentationNavButtons() {
+      if (!frames.length) {
+        presentationNavPrevBtn.disabled = true;
+        presentationNavNextBtn.disabled = true;
+        return;
+      }
+      presentationNavPrevBtn.disabled = currentFrameIndex <= 0;
+      presentationNavNextBtn.disabled = currentFrameIndex >= frames.length - 1;
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (!inPresentationMode) return;
+      const tgt = e.target;
+      if (tgt && (tgt.isContentEditable || tgt.tagName === "INPUT" || tgt.tagName === "TEXTAREA")) return;
+
+      if (e.key === "ArrowRight") {
+        if (currentFrameIndex < frames.length - 1) gotoFrame(currentFrameIndex + 1);
+      } else if (e.key === "ArrowLeft") {
+        if (currentFrameIndex > 0) gotoFrame(currentFrameIndex - 1);
+      } else if (e.key === "Escape") {
+        exitPresentationMode();
+      }
+    });
+
+    // Handle fullscreen exit via browser controls
+    document.addEventListener("fullscreenchange", () => {
+      if (!document.fullscreenElement && inPresentationMode) {
+        exitPresentationMode();
+      }
+    });
+
+    document.addEventListener("keydown", (e) => {
+      const tgt = e.target;
+      const isTyping =
+        tgt && (tgt.isContentEditable || tgt.tagName === "INPUT" || tgt.tagName === "TEXTAREA");
+      if (!(e.ctrlKey || e.metaKey) || isTyping) return;
+      const key = e.key.toLowerCase();
+      if (key === "z") {
+        e.preventDefault();
+        if (e.shiftKey) {
+          redo();
+        } else {
+          undo();
+        }
+      } else if (key === "y") {
+        e.preventDefault();
+        redo();
+      }
+    });
+
+    // ===== ZOOM & PAN =====
+    updateCanvasTransform();
+
+    viewport.addEventListener("wheel", (e) => {
+      if (inPresentationMode) return; // Disable zoom in presentation mode
+      e.preventDefault();
+      const baseFactor = 1.04;
+      const prevScale = camera.scale;
+      const newScale = e.deltaY > 0 ? prevScale / baseFactor : prevScale * baseFactor;
+
+      const clamped = Math.min(Math.max(newScale, 0.0002), 600);
+
+      const rect = viewport.getBoundingClientRect();
+      const cx = e.clientX - rect.left;
+      const cy = e.clientY - rect.top;
+
+      const pre = screenToCanvas(cx, cy);
+
+      camera.scale = clamped;
+
+      const postScreenX = pre.x * camera.scale + camera.x;
+      const postScreenY = pre.y * camera.scale + camera.y;
+      const translationDamping = Math.max(0.2, Math.min(1, camera.scale * 1.2));
+
+      camera.x += (cx - postScreenX) * translationDamping;
+      camera.y += (cy - postScreenY) * translationDamping;
+
+      updateCanvasTransform();
+    });
+
+    let panning = false;
+    let lastX = 0;
+    let lastY = 0;
+
+    viewport.addEventListener("mousedown", (e) => {
+      if (inPresentationMode) return; // Disable pan in presentation mode
+      if (e.target === viewport || e.target === canvas || e.target === frameOverlay) {
+        panning = true;
+        viewport.classList.add("grabbing");
+        lastX = e.clientX;
+        lastY = e.clientY;
+      }
+    });
+
+    window.addEventListener("mousemove", (e) => {
+      if (!panning || inPresentationMode) return;
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      camera.x += dx;
+      camera.y += dy;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      updateCanvasTransform();
+    });
+
+    window.addEventListener("mouseup", () => {
+      panning = false;
+      viewport.classList.remove("grabbing");
+    });
+
+    // ===== BUTTONS =====
+    document.getElementById("add-text-btn").addEventListener("click", addTextBox);
+
+    document.getElementById("add-image-btn").addEventListener("click", () => {
+      imageInput.click();
+    });
+
+    imageInput.addEventListener("change", (e) => {
+      const files = Array.from(e.target.files || []);
+      files.forEach(addImageElementFromFile);
+      imageInput.value = "";
+    });
+
+    importJsonBtn.addEventListener("click", () => {
+      closeExportMenu();
+      importJsonInput.value = "";
+      importJsonInput.click();
+    });
+
+    importJsonInput.addEventListener("change", (e) => {
+      const file = (e.target.files || [])[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const text = reader.result;
+          if (typeof text !== "string") {
+            throw new Error("Unexpected file encoding.");
+          }
+          const parsed = JSON.parse(text);
+          importPresentationState(parsed);
+        } catch (err) {
+          console.error("Import failed:", err);
+          playerStatus.textContent = "Invalid presentation file.";
+          setTimeout(() => {
+            if (playerStatus.textContent === "Invalid presentation file.") {
+              playerStatus.textContent = "";
+            }
+          }, 4000);
+        } finally {
+          importJsonInput.value = "";
+        }
+      };
+      reader.onerror = () => {
+        console.error("File read error:", reader.error);
+        playerStatus.textContent = "Unable to read file.";
+        setTimeout(() => {
+          if (playerStatus.textContent === "Unable to read file.") {
+            playerStatus.textContent = "";
+          }
+        }, 4000);
+        importJsonInput.value = "";
+      };
+      reader.readAsText(file);
+    });
+
+    document.getElementById("add-frame-btn").addEventListener("click", addFrameFromCurrentView);
+
+    document.getElementById("play-btn").addEventListener("click", () => {
+      if (inPresentationMode) {
+        exitPresentationMode();
+      } else {
+        enterPresentationMode();
+      }
+    });
+
+    exportMenuBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleExportMenu();
+    });
+
+    exportMenu.addEventListener("click", (e) => {
+      e.stopPropagation();
+    });
+
+    exportHtmlBtn.addEventListener("click", () => {
+      exportPresentationAsHTML();
+    });
+
+    exportJsonBtn.addEventListener("click", () => {
+      exportPresentationAsJSON();
+    });
+
+    presentationNavPrevBtn.addEventListener("click", () => {
+      if (!inPresentationMode) return;
+      if (currentFrameIndex > 0) gotoFrame(currentFrameIndex - 1);
+    });
+
+    presentationNavNextBtn.addEventListener("click", () => {
+      if (!inPresentationMode) return;
+      if (currentFrameIndex < frames.length - 1) gotoFrame(currentFrameIndex + 1);
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!exportMenuVisible) return;
+      if (exportMenu.contains(e.target) || exportMenuBtn.contains(e.target)) return;
+      closeExportMenu();
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && exportMenuVisible) {
+        closeExportMenu();
+      }
+    });
+
+    // ===== INITIAL VIEW & STARTER TEXT =====
+    function initializeDefaultScene() {
+      const vpRect = viewport.getBoundingClientRect();
+      camera.scale = 0.4;
+      camera.x = vpRect.width / 2 - CANVAS_CENTER_X * camera.scale;
+      camera.y = vpRect.height / 2 - CANVAS_CENTER_Y * camera.scale;
+      updateCanvasTransform();
+
+      const starter = {
+        id: "el_starter",
+        type: "text",
+        x: CANVAS_CENTER_X - (200 / camera.scale) / 2,
+        y: CANVAS_CENTER_Y - (60 / camera.scale) / 2,
+        text: "Zoom into me, add text/images.\nCreate frames, select in list & unlock to edit.\nPlay → use ← / →.",
+        fontSize: 18 / camera.scale
+      };
+      elements.push(starter);
+      createElementDOM(starter);
+    }
+
+    if (importedState) {
+      restoreState(importedState);
+    } else {
+      initializeDefaultScene();
+    }
+
+    if (isExportedPresentation) {
+      requestAnimationFrame(() => {
+        enterPresentationMode();
+      });
+    }
+  </script>
+</body>
+</html>
